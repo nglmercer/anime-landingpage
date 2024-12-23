@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>anime page</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/k.svg">
+  <link rel="stylesheet" href="./assets/styles.css">
+  <script type="module" src="./src/webcomponents.js"></script>
+  <script type="module" src="./src/customcard.js"></script>
+  <script type="module" src="./src/section-ca.js"></script>
   <style>
     body {
       margin: 0;
@@ -11,11 +16,126 @@
       font-family: Arial, sans-serif;
       background-color: #6A7596;
     }
+    .btnregister-y {
+      background-color: #d4f63b;
+      color: #000000;
+      border: none;
+      border-radius: 1rem;
+    }
+    .btnlogin {
+      background-color: transparent !important;
+      background: transparent !important;
+      border: none;
+      border-radius: 1rem;
+      color: white;
+    }
+    .btnlogin:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #d1d1d1;
+    }
   </style>
 </head>
 <body>
+  <nav-bar>
+    <div slot="navbar-content" class="flex flex-end w-full">
+      <div class="flex align-items-center">
+      </div>
+      <button id="btnlogin" class="btnlogin">Iniciar sesión</button>
+        
+      <custom-dropdown mode="dark">
+          <button slot="trigger" class="btnregister-y">Registro</button>
 
+        </custom-dropdown>
+    </div>
+  </nav-bar>
 
+  <side-bar>
+
+  </side-bar>
+  <main-content>
+    <div slot="1-content">
+      <div class="w-full h-full" id="main">
+
+        <custom-card
+        image="/assets/testimage.png"
+        title="Convenciones Anime.EC"
+        text="KONI TECH SOLUCIONES Y OTAKU CONVECIONES SON PARTE PRICIANPAL DE LOS PROMOTORES DE EVENTOS ANIME Y DECIDIMOS REALIZAR ESTE SITIO WED PARA AYUDAR EN LA ADQUICICION DE STANDS PARA TIENDAS RELACIONADAS AL MERCADO"
+        buttontext="Ver más"
+        ></custom-card>
+      <script>
+        const cards = document.querySelectorAll('custom-card');
+        cards.forEach(card => {
+          card.addEventListener('card-clicked', () => {
+            console.log('card clicked');
+            
+          });
+        });
+      </script>
+          <div class="header">
+            <div class="quote">¡Conquista el mundo del anime con nosotros! 🌸🎴</div>
+            
+            <div class="features">
+              <h4>¿Sueñas con destacar en los mejores eventos de anime? 😴✨ Te ofrecemos todo lo que necesitas para brillar:</h4>
+              <ul>
+                <li>Espacios estratégicos en los eventos más emocionantes.</li>
+                <li>Acceso a un público apasionado y en crecimiento constante. 🚀</li>
+              </ul>
+            </div>
+          </div>
+          <div class="stats-grid">
+            <stat-card 
+              number="+118%" 
+              description="Desde 2020, la comunidad del anime ha experimentado un notable crecimiento a nivel mundial. Durante la pandemia, la demanda global de contenido de anime aumentó un 118%, consolidándose como uno de los géneros de mayor expansión en ese período."
+            ></stat-card>
+            
+            <stat-card 
+              number="10k" 
+              description="Mas de 10 mil clientes en nuestros eventos realizados desde el 2020"
+            ></stat-card>
+            
+            <stat-card 
+              number="30" 
+              description="Mas de 30 tiendas locales ya confían en nuestros eventos"
+            ></stat-card>
+          </div>
+      </div>
+    </div>
+    <div slot="2-content">
+      <div class="dual-grid">
+          <div class="justify-center"><h2 class="font-size-12">Caracteristicas en nuestros eventos</h2></div>
+        <div>
+          <characteristic-item
+          icon="/star.svg"
+          title="Seguridad privada"
+          description="Utilizamos el servicio de seguridad privada para los stand y consumidores siempre revisando que no se genere una situacion de peligro."
+          style="--hue: 60deg">
+        </characteristic-item>
+        
+        <characteristic-item
+          icon="/diamond.svg"
+          title="Privacidad en cada acuerdo"
+          description="Tus datos no se comparte con ninguna persona o otros organizadores garantizando que no exita spam"
+          style="--hue: 120deg">
+        </characteristic-item>
+        
+        <characteristic-item
+          icon="/drop.svg"
+          title="Estándares"
+          description="hemos tratado de garantizar el mejor de los show posible haci los consumidores grantizando que el evento siempre tenga actividades distintas y difirenciadas de otras marcas."
+          style="--hue: 180deg">
+        </characteristic-item>
+        </div>
+      </div>
+    </div>
+    <div slot="3-content">
+      <h1>3</h1>
+    </div>
+    <div slot="4-content">
+      <h1>4</h1>
+
+    </div>
+  </div> 
+  </main-content>
   </div>
 </body>
 </html>

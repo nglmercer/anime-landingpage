@@ -1,0 +1,84 @@
+
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+
+:root {
+  --color-primary: #d4f63b;
+  --color-secondary: #d1d1d1;
+  --color-tertiary: #000000;
+}
+.flex {
+    display: flex;
+}
+.justify-between {
+    justify-content: space-between;
+}
+.justify-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.flex-end {
+    justify-content: flex-end;
+}
+.w-full {
+    width: 100%;
+}
+.h-full {
+    height: 100%;
+}
+.relative {
+    position: relative;
+}
+.absolute {
+    position: absolute;
+}
+.background-image {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    height: 95%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.btn-size-1 {
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    border-radius: 0.5rem;
+}
+#main {
+    display: grid;
+
+    height: 100%;
+}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+  .quote {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
+
+.dual-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    padding: 1rem;
+    margin: 1rem;
+  }
+@media (max-width: 768px) {
+    .dual-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.font-size-8 {
+    font-size: 2rem;
+}
+.font-size-12 {
+    font-size: 3rem;
+}
