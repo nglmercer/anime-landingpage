@@ -220,98 +220,199 @@ class StatCard extends HTMLElement {
   customElements.define('stat-card', StatCard);
   class EventCard extends HTMLElement {
     constructor() {
-      super();
-      this.attachShadow({ mode: 'open' });
+        super();
+        this.attachShadow({ mode: 'open' });
+        this.mly = null;
     }
-  
+
     static get observedAttributes() {
-      return ['location', 'date', 'image'];
+        return ['location', 'date', 'image', 'latitude', 'longitude'];
     }
-  
-    connectedCallback() {
-      this.render();
+
+    async connectedCallback() {
+        // Cargar Mapillary scripts y styles dinámicamente
+        await this.loadMapillaryResources();
+        this.render();
+        this.initializeMapillary();
     }
-  
+
     attributeChangedCallback() {
-      this.render();
+        if (this.shadowRoot.innerHTML !== '') {
+            this.render();
+            this.initializeMapillary();
+        }
     }
-  
-    render() {
-      const location = this.getAttribute('location') || '';
-      const date = this.getAttribute('date') || '';
-      const image = this.getAttribute('image') || '';
-      const features = this.getAttribute('features')?.split(',') || [];
-  
-      this.shadowRoot.innerHTML = `
-        <style>
-          .card {
-            background:rgb(17, 17, 17);
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            max-width: 300px;
-            margin: 1rem;
-          }
-          
-          .card-image {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-          }
-          
-          .card-content {
-            padding: 1rem;
-          }
-          
-          .location {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-            color: rgb(255, 255, 255);
-          }
-          
-          .date {
-            color: rgb(233, 233, 233);
-            margin-bottom: 1rem;
-          }
-          
-          .features {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            color: rgb(41, 41, 41);
-          }
-          
-          .feature-link {
-            text-decoration: none;
-            color: #646cff;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            background:rgb(36, 36, 36);
-            transition: background 0.3s;
-          }
-          
-          .feature-link:hover {
-            background:rgb(49, 49, 49);
-          }
-        </style>
+
+    async loadMapillaryResources() {
+        // Agregar script de Mapillary
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.js';
+        script.async = true;
+        document.head.appendChild(script);
+
+        // Agregar estilos de Mapillary
+        const linkElem = document.createElement('link');
+        linkElem.rel = 'stylesheet';
+        linkElem.href = 'https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.css';
+        document.head.appendChild(linkElem);
+
+        // Esperar a que el script se cargue
+        await new Promise(resolve => script.onload = resolve);
+    }
+
+    async initializeMapillary() {
+        const lat = this.getAttribute('latitude');
+        const lng = this.getAttribute('longitude');
         
-        <div class="card">
-          ${image ? `<img src="${image}" alt="${location}" class="card-image">` : ''}
-          <div class="card-content">
-            <div class="location">${location}</div>
-            <div class="date">${date}</div>
-            <div class="features">
-              ${features.map(feature => `
-                   <li>
-                <a href="#${feature.trim()}" class="feature-link">${feature.trim()}</a>
-                                   </li>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      `;
+        if (!lat || !lng || !mapillary) return;
+
+        const { Viewer } = mapillary;
+        const MAPILLARY_ACCESS_TOKEN = 'MLY|8868412723249475|5849dc5c25ec746f4d382f228be442e4';
+
+        // Inicializar el visor
+        this.mly = new Viewer({
+            container: this.shadowRoot.getElementById('mly'),
+            accessToken: MAPILLARY_ACCESS_TOKEN,
+        });
+
+        // Buscar y mostrar imagen
+        await this.cargarUbicacion(lat, lng);
     }
+
+    async cargarUbicacion(lat, lng) {
+      if (!this.mly) return;
+
+      const MAPILLARY_ACCESS_TOKEN = 'MLY|8868412723249475|5849dc5c25ec746f4d382f228be442e4';
+      
+      try {
+          // Calculamos el bbox correctamente
+          const radius = 0.01; // Radio inicial de búsqueda
+          const bbox = {
+              west: parseFloat(lng) - radius,
+              south: parseFloat(lat) - radius,
+              east: parseFloat(lng) + radius,
+              north: parseFloat(lat) + radius
+          };
+
+          const url = `https://graph.mapillary.com/images?access_token=${MAPILLARY_ACCESS_TOKEN}&` +
+                     `fields=id,captured_at&limit=5&` +
+                     `bbox=${bbox.west.toFixed(6)},${bbox.south.toFixed(6)},${bbox.east.toFixed(6)},${bbox.north.toFixed(6)}`;
+
+          const response = await fetch(url);
+          
+          const data = await response.json();
+
+          if (data.data && data.data.length > 0) {
+              const imagenes = data.data.sort((a, b) => 
+                  new Date(b.captured_at) - new Date(a.captured_at)
+              );
+              this.mly.moveTo(imagenes[0].id);
+          } else {
+              // Búsqueda en radio más amplio
+              const largerRadius = 0.05; // Radio expandido
+              const largerBbox = {
+                  west: parseFloat(lng) - largerRadius,
+                  south: parseFloat(lat) - largerRadius,
+                  east: parseFloat(lng) + largerRadius,
+                  north: parseFloat(lat) + largerRadius
+              };
+
+              const largerUrl = `https://graph.mapillary.com/images?access_token=${MAPILLARY_ACCESS_TOKEN}&` +
+                              `fields=id,captured_at&limit=5&` +
+                              `bbox=${largerBbox.west.toFixed(6)},${largerBbox.south.toFixed(6)},` +
+                              `${largerBbox.east.toFixed(6)},${largerBbox.north.toFixed(6)}`;
+
+              const responseLarge = await fetch(largerUrl);
+              const dataLarge = await responseLarge.json();
+              
+              if (dataLarge.data && dataLarge.data.length > 0) {
+                  const imagenes = dataLarge.data.sort((a, b) => 
+                      new Date(b.captured_at) - new Date(a.captured_at)
+                  );
+                  this.mly.moveTo(imagenes[0].id);
+              } else {
+                  console.log('No se encontraron imágenes en esta ubicación');
+              }
+          }
+      } catch (error) {
+          console.error('Error al cargar vista de calle:', error);
+      }
   }
-  
-  customElements.define('event-card', EventCard);
+
+    render() {
+        const location = this.getAttribute('location') || '';
+        const date = this.getAttribute('date') || '';
+        const features = this.getAttribute('features')?.split(',') || [];
+
+        this.shadowRoot.innerHTML = `
+            <style>
+                .card {
+                    background: rgb(17, 17, 17);
+                    border-radius: 8px;
+                    overflow: hidden;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    max-width: 300px;
+                    margin: 1rem;
+                }
+
+                #mly {
+                    width: 100%;
+                    height: 200px;
+                }
+
+                .card-content {
+                    padding: 1rem;
+                }
+
+                .location {
+                    font-size: 1.5rem;
+                    font-weight: bold;
+                    margin-bottom: 0.5rem;
+                    color: rgb(255, 255, 255);
+                }
+
+                .date {
+                    color: rgb(233, 233, 233);
+                    margin-bottom: 1rem;
+                }
+
+                .features {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 0.5rem;
+                    color: rgb(41, 41, 41);
+                }
+
+                .feature-link {
+                    text-decoration: none;
+                    color: #646cff;
+                    padding: 0.25rem 0.5rem;
+                    border-radius: 4px;
+                    background: rgb(36, 36, 36);
+                    transition: background 0.3s;
+                }
+
+                .feature-link:hover {
+                    background: rgb(49, 49, 49);
+                }
+            </style>
+
+            <div class="card">
+                <div id="mly"></div>
+                <div class="card-content">
+                    <div class="location">${location}</div>
+                    <div class="date">${date}</div>
+                    <div class="features">
+                        ${features.map(feature => `
+                            <li>
+                                <a href="#${feature.trim()}" class="feature-link">${feature.trim()}</a>
+                            </li>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+customElements.define('event-card', EventCard);
