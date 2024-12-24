@@ -35,6 +35,12 @@
 .absolute {
     position: absolute;
 }
+.m-5 {
+    margin: 1.25rem;
+}
+.p-5 {
+    padding: 1.25rem;
+}
 .background-image {
     position: fixed;
     bottom: 0;

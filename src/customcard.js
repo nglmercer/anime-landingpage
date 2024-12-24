@@ -3,12 +3,17 @@ class CustomCard extends HTMLElement {
       super();
       this.attachShadow({ mode: 'open' });
       
-      this.shadowRoot.innerHTML = `
+      this.shadowRoot.innerHTML = /**/ `
         <style>
+        :host {
+        margin: 1rem;
+        padding: 1rem;
+        box-sizing: border-box;
+        font-family: 'Poppins', sans-serif;
+        }
             .card {
             display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 1rem;
+            grid-template-columns: 1fr 500px;
             height: 92dvh;
             }
           .content {
@@ -18,19 +23,25 @@ class CustomCard extends HTMLElement {
             justify-content: center;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            max-width: 800px;
+            max-width: 1000px;
+            margin-inline: auto;
+            margin-block: 9rem;
+            z-index: 1;
           }
           
           img {
-            object-fit: cover;
-            border-radius: 4px;
-            width: 100%;
+          position: absolute;
+          object-fit: cover;
+          border-radius: 4px;
+          box-sizing: border-box;
+          height: 100%;
+          z-index: 0;
           }
           .image-container {
             display: flex;
             justify-content: center;
             height: 90%;
-            max-width: 400px;
+            width: 100%;
           }
           h2 {
             margin: 8px 0;
@@ -67,6 +78,21 @@ class CustomCard extends HTMLElement {
             p {
               font-size: 0.9em;
             }
+              .image-container {
+              position: absolute;
+              width: 100%;
+              }
+              img { 
+              position: relative;
+              height: auto;
+              }
+              .content {
+                          background-color: rgba(255, 255, 255, 0);
+                          backdrop-filter: blur(10px);  
+                          -webkit-backdrop-filter: blur(10px);
+                            mask-image: radial-gradient(circle, rgba(0, 0, 0, 1) 70%, rgba(0, 0, 0, 0.2) 90%);
+                          -webkit-mask-image: radial-gradient(circle, rgba(0, 0, 0, 1) 70%, rgba(0, 0, 0, 0.2) 90%);
+                          padding: 3rem;
           }
         </style>
         

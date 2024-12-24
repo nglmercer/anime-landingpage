@@ -9,6 +9,8 @@
   <script type="module" src="./src/webcomponents.js"></script>
   <script type="module" src="./src/customcard.js"></script>
   <script type="module" src="./src/section-ca.js"></script>
+  <script type="module" src="./src/carousel.js"></script>
+  <script type="module" src="./src/main.js"></script>
   <style>
     body {
       margin: 0;
@@ -57,7 +59,7 @@
       <div class="w-full h-full" id="main">
 
         <custom-card
-        image="/assets/testimage.png"
+        image="/assets/image1.png"
         title="Convenciones Anime.EC"
         text="KONI TECH SOLUCIONES Y OTAKU CONVECIONES SON PARTE PRICIANPAL DE LOS PROMOTORES DE EVENTOS ANIME Y DECIDIMOS REALIZAR ESTE SITIO WED PARA AYUDAR EN LA ADQUICICION DE STANDS PARA TIENDAS RELACIONADAS AL MERCADO"
         buttontext="Ver más"
@@ -71,33 +73,35 @@
           });
         });
       </script>
-          <div class="header">
-            <div class="quote">¡Conquista el mundo del anime con nosotros! 🌸🎴</div>
-            
-            <div class="features">
-              <h4>¿Sueñas con destacar en los mejores eventos de anime? 😴✨ Te ofrecemos todo lo que necesitas para brillar:</h4>
-              <ul>
-                <li>Espacios estratégicos en los eventos más emocionantes.</li>
-                <li>Acceso a un público apasionado y en crecimiento constante. 🚀</li>
-              </ul>
-            </div>
+      <div class="m-5 p-5">
+        <div class="header">
+          <div class="quote">¡Conquista el mundo del anime con nosotros! 🌸🎴</div>
+          
+          <div class="features">
+            <h4>¿Sueñas con destacar en los mejores eventos de anime? 😴✨ Te ofrecemos todo lo que necesitas para brillar:</h4>
+            <ul>
+              <li>Espacios estratégicos en los eventos más emocionantes.</li>
+              <li>Acceso a un público apasionado y en crecimiento constante. 🚀</li>
+            </ul>
           </div>
-          <div class="stats-grid">
-            <stat-card 
-              number="+118%" 
-              description="Desde 2020, la comunidad del anime ha experimentado un notable crecimiento a nivel mundial. Durante la pandemia, la demanda global de contenido de anime aumentó un 118%, consolidándose como uno de los géneros de mayor expansión en ese período."
-            ></stat-card>
-            
-            <stat-card 
-              number="10k" 
-              description="Mas de 10 mil clientes en nuestros eventos realizados desde el 2020"
-            ></stat-card>
-            
-            <stat-card 
-              number="30" 
-              description="Mas de 30 tiendas locales ya confían en nuestros eventos"
-            ></stat-card>
-          </div>
+        </div>
+        <div class="stats-grid">
+          <stat-card 
+            number="+118%" 
+            description="Desde 2020, la comunidad del anime ha experimentado un notable crecimiento a nivel mundial. Durante la pandemia, la demanda global de contenido de anime aumentó un 118%, consolidándose como uno de los géneros de mayor expansión en ese período."
+          ></stat-card>
+          
+          <stat-card 
+            number="10k" 
+            description="Mas de 10 mil clientes en nuestros eventos realizados desde el 2020"
+          ></stat-card>
+          
+          <stat-card 
+            number="30" 
+            description="Mas de 30 tiendas locales ya confían en nuestros eventos"
+          ></stat-card>
+        </div>
+      </div>
       </div>
     </div>
     <div slot="2-content">
@@ -105,26 +109,31 @@
           <div class="justify-center"><h2 class="font-size-12">Caracteristicas en nuestros eventos</h2></div>
         <div>
           <characteristic-item
-          icon="/star.svg"
+          icon="/assets/svg/security.svg"
           title="Seguridad privada"
           description="Utilizamos el servicio de seguridad privada para los stand y consumidores siempre revisando que no se genere una situacion de peligro."
           style="--hue: 60deg">
         </characteristic-item>
         
         <characteristic-item
-          icon="/diamond.svg"
+          icon="/assets/svg/privacity.svg"
           title="Privacidad en cada acuerdo"
           description="Tus datos no se comparte con ninguna persona o otros organizadores garantizando que no exita spam"
           style="--hue: 120deg">
         </characteristic-item>
         
         <characteristic-item
-          icon="/drop.svg"
+          icon="/assets/svg/standart.svg"
           title="Estándares"
           description="hemos tratado de garantizar el mejor de los show posible haci los consumidores grantizando que el evento siempre tenga actividades distintas y difirenciadas de otras marcas."
           style="--hue: 180deg">
         </characteristic-item>
         </div>
+      </div>
+      <div>
+        <infinite-carousel>
+
+        </infinite-carousel>
       </div>
     </div>
     <div slot="3-content">
