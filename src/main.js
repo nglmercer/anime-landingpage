@@ -46,6 +46,10 @@ form.initialize()
     placeholder: 'texto',
 })
 .render()
+.setSubmitButton({
+    label: 'Registrar', 
+    className: 'btn-size-1',
+})
 .toggleDarkMode()
 
 form.addEventListener('form-change', (e) => {
