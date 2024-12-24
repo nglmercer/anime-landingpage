@@ -283,14 +283,15 @@ class AppConfig {
         label: 'Contacto',
         icon: svgs.phone
     },
+
     [this.PAGES.tab4]: {
-        label: 'Login',
-        icon: svgs.login
-    },
-    [this.PAGES.tab4]: {
-      label: 'Settings',
-      icon: svgs.config
+      label: 'Detalles',
+      icon: svgs.suscription
   },
+  [this.PAGES.tab5]: {
+    label: 'Login',
+    icon: svgs.login
+},
   }
   static slots = {
     1: '<slot name="1-content">No content available for Dashboard</slot>',
@@ -556,7 +557,8 @@ class MainContent extends HTMLElement {
       <style>
         main {
           padding-top: 3.5rem;
-          min-height: 100vh;
+          height: 100%;
+          min-height: 94.5dvh;
           background-color: #000000;
           color: white;
           transition: padding-left 0.3s ease-in-out;

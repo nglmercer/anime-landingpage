@@ -8,6 +8,7 @@ class CustomCard extends HTMLElement {
         :host {
         margin: 1rem;
         padding: 1rem;
+
         box-sizing: border-box;
         font-family: 'Poppins', sans-serif;
         }
@@ -15,6 +16,9 @@ class CustomCard extends HTMLElement {
             display: grid;
             grid-template-columns: 1fr 500px;
             height: 92dvh;
+            position: relative;
+            overflow: hidden;
+            gap: 1rem;
             }
           .content {
             display: flex;
@@ -26,6 +30,7 @@ class CustomCard extends HTMLElement {
             max-width: 1000px;
             margin-inline: auto;
             margin-block: 9rem;
+            padding-right: 2rem;
             z-index: 1;
           }
           
@@ -36,12 +41,14 @@ class CustomCard extends HTMLElement {
           box-sizing: border-box;
           height: 100%;
           z-index: 0;
+          right: 0;
           }
           .image-container {
             display: flex;
             justify-content: center;
             height: 90%;
             width: 100%;
+            overflow: hidden;
           }
           h2 {
             margin: 8px 0;
@@ -233,7 +240,7 @@ class StatCard extends HTMLElement {
         // Cargar Mapillary scripts y styles dinámicamente
         await this.loadMapillaryResources();
         this.render();
-        this.initializeMapillary();
+        //this.initializeMapillary();
     }
 
     attributeChangedCallback() {
@@ -339,11 +346,137 @@ class StatCard extends HTMLElement {
       }
   }
 
-    render() {
-        const location = this.getAttribute('location') || '';
-        const date = this.getAttribute('date') || '';
-        const features = this.getAttribute('features')?.split(',') || [];
+  render() {
+    const location = this.getAttribute('location') || '';
+    const date = this.getAttribute('date') || '';
+    const image = this.getAttribute('image') || null;
+    const features = this.getAttribute('features')?.split(',') || [];
 
+    // Renderiza el contenido inicial
+    this.shadowRoot.innerHTML = `
+        <style>
+            .card {
+                background: rgb(17, 17, 17);
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                max-width: 300px;
+                margin: 1rem;
+            }
+
+            #mly {
+                width: 100%;
+                height: 200px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+            }
+
+            #mly img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .card-content {
+                padding: 1rem;
+            }
+
+            .location {
+                font-size: 1.5rem;
+                font-weight: bold;
+                margin-bottom: 0.5rem;
+                color: rgb(255, 255, 255);
+            }
+
+            .date {
+                color: rgb(233, 233, 233);
+                margin-bottom: 1rem;
+            }
+
+            .features {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                color: rgb(41, 41, 41);
+            }
+
+            .feature-link {
+                text-decoration: none;
+                color: #646cff;
+                padding: 0.25rem 0.5rem;
+                border-radius: 4px;
+                background: rgb(36, 36, 36);
+                transition: background 0.3s;
+            }
+
+            .feature-link:hover {
+                background: rgb(49, 49, 49);
+            }
+        </style>
+
+        <div class="card">
+            <div id="mly" title="Haz clic para ver la vista previa">
+                ${image ? `<img src="${image}" alt="Vista previa del evento">` : 'Cargando vista previa...'}
+            </div>
+            <div class="card-content">
+                <div class="location">${location}</div>
+                <div class="date">${date}</div>
+                <div class="features">
+                    ${features.map(feature => `
+                        <li>
+                            <a href="#${feature.trim()}" class="feature-link">${feature.trim()}</a>
+                        </li>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+
+    this.addClickListener(image);
+}
+
+addClickListener(image) {
+    const mlyDiv = this.shadowRoot.getElementById('mly');
+
+    if (image) {
+        mlyDiv.addEventListener('click', async () => {
+            mlyDiv.innerHTML = 'Cargando vista previa...'; // Muestra un mensaje mientras se carga
+            await this.initializeMapillary();
+        });
+    } else {
+        // Si no hay imagen, inicializa directamente el visor de Mapillary
+        this.initializeMapillary();
+    }
+}
+
+
+}
+
+customElements.define('event-card', EventCard);
+class GuestCard extends HTMLElement {
+    constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+    }
+
+    static get observedAttributes() {
+        return ['name', 'image', 'description'];
+    }
+
+    connectedCallback() {
+        this.render();
+    }
+
+    attributeChangedCallback() {
+        this.render();
+    }
+
+    render() {
+        const name = this.getAttribute('name') || '';
+        const image = this.getAttribute('image') || null;
+        const description = this.getAttribute('description') || '';
         this.shadowRoot.innerHTML = `
             <style>
                 .card {
@@ -355,64 +488,39 @@ class StatCard extends HTMLElement {
                     margin: 1rem;
                 }
 
-                #mly {
+                #image-content {
                     width: 100%;
-                    height: 200px;
+                    max-height: 400px;
                 }
 
                 .card-content {
                     padding: 1rem;
                 }
 
-                .location {
+                .name {
                     font-size: 1.5rem;
                     font-weight: bold;
                     margin-bottom: 0.5rem;
                     color: rgb(255, 255, 255);
                 }
 
-                .date {
+                .description {
                     color: rgb(233, 233, 233);
                     margin-bottom: 1rem;
-                }
-
-                .features {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 0.5rem;
-                    color: rgb(41, 41, 41);
-                }
-
-                .feature-link {
-                    text-decoration: none;
-                    color: #646cff;
-                    padding: 0.25rem 0.5rem;
-                    border-radius: 4px;
-                    background: rgb(36, 36, 36);
-                    transition: background 0.3s;
-                }
-
-                .feature-link:hover {
-                    background: rgb(49, 49, 49);
                 }
             </style>
 
             <div class="card">
-                <div id="mly"></div>
+                <div id="image-content">
+                    ${image ? `<img src="${image}" alt="Imagen de ${name}">` : 'Cargando imagen...'}
+                </div>
                 <div class="card-content">
-                    <div class="location">${location}</div>
-                    <div class="date">${date}</div>
-                    <div class="features">
-                        ${features.map(feature => `
-                            <li>
-                                <a href="#${feature.trim()}" class="feature-link">${feature.trim()}</a>
-                            </li>
-                        `).join('')}
-                    </div>
+                    <div class="name">${this.getAttribute('name')}</div>
+                    <div class="description">${this.getAttribute('description')}</div>
                 </div>
             </div>
         `;
     }
-}
-
-customElements.define('event-card', EventCard);
+  }
+  
+  customElements.define('guest-card', GuestCard);

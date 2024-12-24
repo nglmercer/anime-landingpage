@@ -7,6 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/assets/k.svg">
   <link rel="stylesheet" href="./assets/styles.css">
   <script type="module" src="./src/webcomponents.js"></script>
+  <script type="module" src="./src/tittle.js"></script>
   <script type="module" src="./src/customcard.js"></script>
   <script type="module" src="./src/section-ca.js"></script>
   <script type="module" src="./src/carousel.js"></script>
@@ -16,7 +17,7 @@
       margin: 0;
       padding: 0;
       font-family: Arial, sans-serif;
-      background-color: #6A7596;
+      background-color: #000000;
     }
     .btnregister-y {
       background-color: #d4f63b;
@@ -137,6 +138,8 @@
       </div>
     </div>
     <div slot="3-content">
+
+      <tittle-component Tittle="Eventos 2025" subtittle="Eventos de anime, informacion sobre la ubicacion, fecha y detalles del evento." image="./assets/logo-icon.png"></tittle-component>
       <div class="stats-grid">
         <event-card
         location="Centro Histórico CDMX"
@@ -165,8 +168,24 @@
       </div>
     </div>
     <div slot="4-content">
-      <h1>4</h1>
-
+      <tittle-component Tittle="Artistas invitados" image="./assets/logo-icon.png"></tittle-component>
+      <div class="stats-grid">
+            <guest-card
+              name="nombre de artista" 
+              description="descriptcion de artista"
+              image="./assets/transparent-naruto-preview.png"
+              ></guest-card>
+              <guest-card
+              name="Cosplayer invitada" 
+              description="informacion sobre el artista"
+              image="./assets/chibi-m.png"
+              ></guest-card>
+              <guest-card
+              name="Cosplayer invitada" 
+              description="informacion sobre el artista"
+              image="./assets/chibi-m.png"
+              ></guest-card>
+      </div>
     </div>
   </div> 
   </main-content>
