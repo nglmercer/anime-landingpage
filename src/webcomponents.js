@@ -927,3 +927,1525 @@ class CustomDropdown extends HTMLElement {
 }
 
 customElements.define('custom-dropdown', CustomDropdown);
+class FlexibleModalSelector extends HTMLElement {
+  constructor() {
+      super();
+      this.attachShadow({ mode: 'open' });
+      this.selectedValues = [];
+      this._hiddenInput = null;
+      this.options = [];
+      this.mode = 'single';
+      this.theme = 'dark'
+      this.isDarkMode = false;
+      this.separator = '||'; // Unique separator to handle values with commas
+      const template = document.createElement('template');
+      template.innerHTML =/*html*/ `
+          <style>
+              :host {
+                  --bg-primary: white;
+                  --bg-secondary: #f8f9fa;
+                  --text-primary: black;
+                  --text-secondary: #6b7280;
+                  --border-color: #e2e8f0;
+                  --accent-color: #3b82f6;
+                  --accent-light: rgba(59, 130, 246, 0.1);
+                  transition: all 0.5s ease-in-out;
+                  z-index: 1002;
+              }
+              :host(.dark) {
+                  --bg-primary: #1a202c;
+                  --bg-secondary: #2d3748;
+                  --text-primary: white;
+                  --text-secondary: #cbd5e0;
+                  --border-color: #4a5568;
+                  --accent-color: #4299e1;
+                  --accent-light: rgba(66, 153, 225, 0.1);
+              }
+              .input-wrapper {
+                  position: relative;
+                  width: 100%;
+              }
+              input {
+                  box-sizing: content-box;
+                  padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+                  border: 1px solid var(--border-color);
+                  border-radius: 0.375rem;
+                  outline: none;
+                  background: var(--bg-primary);
+                  color: var(--text-primary);
+                  cursor: pointer;
+              }
+              input:focus {
+                  border-color: var(--accent-color);
+                  box-shadow: 0 0 0 3px var(--accent-light);
+              }
+              .toggle-btn {
+                  position: absolute;
+                  right: 0.5rem;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  padding: 0.25rem;
+                  background: none;
+                  border: none;
+                  cursor: pointer;
+                  color: var(--text-secondary);
+              }
+              ::slotted(input[type="hidden"]) {
+                  display: none;
+              }
+          </style>
+          <div class="input-wrapper">
+              <slot></slot>
+              <input type="text" readonly placeholder="Seleccione un valor">
+              <button class="toggle-btn">▼</button>
+          </div>
+      `;
+
+      this.shadowRoot.appendChild(template.content.cloneNode(true));
+      this.input = this.shadowRoot.querySelector('input[type="text"]');
+      this.toggleBtn = this.shadowRoot.querySelector('.toggle-btn');
+
+      this.setupEventListeners();
+  }
+
+
+  connectedCallback() {
+      // Set mode from attribute
+      this.mode = this.getAttribute('mode') || 'single';
+      if (!this._hiddenInput) {
+          this._hiddenInput = document.createElement('input');
+          this._hiddenInput.type = 'hidden';
+          this._hiddenInput.name = this.getAttribute('name') || '';
+          this.appendChild(this._hiddenInput);
+      }
+      // Support initial values
+      const initialValue = this.getAttribute('value');
+      if (initialValue) {
+          // Use new parsing method
+          const values = this.parseValue(initialValue);
+          this.setValues(values);
+      }
+  }
+
+  static get observedAttributes() {
+      return ['name', 'value', 'mode', 'theme'];
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+      if (name === 'name' && this._hiddenInput) {
+          this._hiddenInput.name = newValue;
+      }
+      
+      if (name === 'mode') {
+          this.mode = newValue || 'single';
+          // Reset selection if mode changes
+          this.selectedValues = [];
+          this.input.value = '';
+          if (this._hiddenInput) this._hiddenInput.value = '';
+      }
+     
+      if (name === 'value' && newValue !== oldValue) {
+          // Use new parsing method
+          const values = this.parseValue(newValue);
+          this.setValues(values);
+      }
+  }
+  parseValue(value) {
+      if (!value) return [];
+
+      // If the value contains our separator, split by it
+      if (value.includes(this.separator)) {
+          return value.split(this.separator).map(v => v.trim());
+      }
+
+      // Fallback to comma splitting, but only if the comma is not inside quotes or special values
+      return this.splitValueSafely(value);
+  }
+  splitValueSafely(value) {
+      // If no commas, return as single value
+      if (!value.includes(',')) return [value.trim()];
+
+      // Use a regex to split while respecting quotes and special characters
+      const values = value.match(/(?:[^\s,"]|"(?:\\"|[^"])*")+/g);
+      
+      return values ? values.map(v => {
+          // Remove surrounding quotes if present
+          return v.trim().replace(/^["']|["']$/g, '');
+      }) : [value.trim()];
+  }
+  setValues(values) {
+    // Ensure values is always an array
+    const valuesArray = Array.isArray(values) ? values : [values];
+
+    // Normalize values for consistent handling
+    const normalizedValues = valuesArray.map(this.normalizeValue);
+
+    // Filter out values that are not in the available options
+    const availableValues = normalizedValues.filter(value => {
+        const matchingOption = this.options.some(option => 
+            this.normalizeValue(option.value) === value
+        );
+        return matchingOption;
+    });
+
+    // In single mode, take only the first available value
+    this.selectedValues = this.mode === 'single' ? availableValues.slice(0, 1) : availableValues;
+
+    // Get labels and images for selected values
+    const selectedOptions = this.options
+        .filter(option => {
+            const normalizedOptionValue = this.normalizeValue(option.value);
+            return this.selectedValues.includes(normalizedOptionValue);
+        });
+
+    // Clear previous image if exists
+    const existingImage = this.input.previousElementSibling;
+    if (existingImage && existingImage.tagName === 'IMG') {
+        this.input.parentNode.removeChild(existingImage);
+    }
+
+    // Update input display
+    const labels = selectedOptions.map(option => option.label);
+    this.input.value = labels.join(', ');
+
+    // Add image if exists in single mode
+    if (this.mode === 'single' && selectedOptions[0] && (selectedOptions[0].image || selectedOptions[0].path)) {
+        const img = document.createElement('img');
+        img.src = (selectedOptions[0].image || selectedOptions[0].path)?.startsWith('http') || (selectedOptions[0].image || selectedOptions[0].path)?.startsWith('blob:') ? (selectedOptions[0].image || selectedOptions[0].path) : `/media/${(selectedOptions[0].image || selectedOptions[0].path)}`;
+        img.style.cssText = `
+            position: absolute;
+            left: 70%; 
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2rem;
+            height: 2rem;
+            object-fit: cover;
+            border-radius: 0.25rem;
+        `;
+        this.input.parentNode.insertBefore(img, this.input);
+    }
+
+    // Update hidden input using the separator method
+    if (this._hiddenInput) {
+        this._hiddenInput.value = this.selectedValues.join(this.separator);
+    }
+
+    // Dispatch events
+    this.dispatchEvent(new CustomEvent('change', {
+        detail: {
+            values: this.selectedValues,
+            mode: this.mode
+        },
+        bubbles: true
+    }));
+    this.dispatchEvent(new Event('input', { bubbles: true }));
+}
+  setupEventListeners() {
+      const openSelector = () => {
+          this.showSelectorModal();
+      };
+
+      this.input.addEventListener('click', openSelector);
+      this.toggleBtn.addEventListener('click', openSelector);
+  }
+
+  async showSelectorModal() {
+    try {
+        const result = await this.createSelectorModal({
+            selectedValues: this.selectedValues,
+            options: this.options, // Ensure always using current options
+            mode: this.mode,
+            theme: this.isDarkMode ? 'dark' : 'light'
+        });
+        
+        if (result && result.values) {
+            this.setValues(result.values);
+        }
+    } catch (error) {
+        console.log('Selector modal cancelled');
+    }
+}
+
+  /**
+   * Method to create selector modal dynamically based on mode
+   */
+  async createSelectorModal({ selectedValues, options, mode, theme = 'light' }) {
+    return new Promise((resolve, reject) => {
+        // Color schemes
+        const colors = {
+            light: {
+                background: 'white',
+                border: '#e2e8f0',
+                text: 'black',
+                selectedBackground: '#3b82f6',
+                selectedText: 'white',
+                searchBg: 'white',
+                cancelBg: '#f3f4f6'
+            },
+            dark: {
+                background: '#1e293b', // slate-800
+                border: '#334155', // slate-700
+                text: 'white',
+                selectedBackground: '#2563eb', // blue-600
+                selectedText: 'white',
+                searchBg: '#334155', // slate-700
+                cancelBg: '#334155' // slate-700
+            }
+        };
+
+        const currentColors = colors[theme];
+
+        // Crear modal
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        `;
+
+        // Contenedor del contenido
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: ${currentColors.background};
+            border: 1px solid ${currentColors.border};
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 1rem;
+            max-width: 400px;
+            width: 90%;
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            color: ${currentColors.text};
+        `;
+
+        // Buscador
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.placeholder = 'Buscar...';
+        searchInput.style.cssText = `
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid ${currentColors.border};
+            border-radius: 0.25rem;
+            background-color: ${currentColors.searchBg};
+            color: ${currentColors.text};
+        `;
+
+        // Contenedor de opciones
+        const optionList = document.createElement('div');
+        optionList.style.cssText = `
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+        `;
+
+        // Lógica de búsqueda en tiempo real
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            optionElements.forEach(optionElement => {
+                const label = optionElement.querySelector('span').textContent.toLowerCase();
+                optionElement.style.display = label.includes(searchTerm) ? '' : 'none';
+            });
+        });
+
+        // Track selected values
+        const currentlySelectedValues = new Set(selectedValues);
+        const optionElements = [];
+
+        // Crear opciones
+        options.forEach(option => {
+          const optionElement = document.createElement('div');
+          optionElement.style.cssText = `
+              display: flex;
+              align-items: center;
+              padding: 0.5rem;
+              border: 1px solid ${currentColors.border};
+              border-radius: 0.25rem;
+              cursor: pointer;
+              background-color: ${currentlySelectedValues.has(option.value) ? currentColors.selectedBackground : currentColors.background};
+              color: ${currentlySelectedValues.has(option.value) ? currentColors.selectedText : currentColors.text};
+              position: relative;
+          `;
+  
+  
+
+          // Checkbox para modo multi
+          if (mode === 'multi') {
+              const checkbox = document.createElement('input');
+              checkbox.type = 'checkbox';
+              checkbox.checked = currentlySelectedValues.has(option.value);
+              checkbox.style.marginRight = '0.5rem';
+              checkbox.style.accentColor = currentColors.selectedBackground;
+              optionElement.appendChild(checkbox);
+          }
+
+          let mediaHoverOverlay = null;
+          let hoverTimeoutId = null;
+          if (option.image || option.path || option.mediaType) {
+            // Create media element using the function
+            const mediaElement = document.createElement('div');
+            mediaElement.innerHTML = generateMediaElement({
+                image: option.image, 
+                path: option.path, 
+                mediaType: option.mediaType,
+                label: option.label
+            });
+            
+            // Get the actual media element (img, video, or audio)
+            const mediaChild = mediaElement.firstChild;
+            
+            // Apply styling consistent with your existing code
+            mediaChild.style.cssText = `
+                width: 30px;
+                height: 30px;
+                object-fit: cover;
+                margin-right: 0.5rem;
+                border-radius: 0.25rem;
+                transition: transform 0.3s ease;
+            `;
+            
+            // Hover event to show large preview
+            mediaChild.addEventListener('mouseenter', (e) => {
+              // Clear any existing timeout
+              if (hoverTimeoutId) {
+                clearTimeout(hoverTimeoutId);
+              }
+  
+              // Delay creation of overlay to prevent quick disappearance
+              hoverTimeoutId = setTimeout(() => {
+                // Create overlay for large preview
+                mediaHoverOverlay = document.createElement('div');
+                mediaHoverOverlay.style.cssText = `
+                  position: fixed;
+                  top: 50%;
+                  left: 50%;
+                  transform: translate(-50%, -50%);
+                  z-index: 1002;
+                  background: rgba(0,0,0,0.8);
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  padding: 1rem;
+                  border-radius: 0.5rem;
+                  max-width: 300px;
+                  max-height: 300px;
+                  object-fit: contain;
+                `;
+  
+                const largeMedia = mediaChild.cloneNode(true);
+                largeMedia.style.cssText = `
+                  max-width: 300px;
+                  max-height: 300px;
+                  object-fit: contain;
+                `;
+  
+                mediaHoverOverlay.appendChild(largeMedia);
+                document.body.appendChild(mediaHoverOverlay);
+  
+                // Event listeners to handle overlay interaction
+                const hideOverlay = () => {
+                  if (mediaHoverOverlay) {
+                    document.body.removeChild(mediaHoverOverlay);
+                    mediaHoverOverlay = null;
+                  }
+                };
+  
+                mediaHoverOverlay.addEventListener('mouseleave', hideOverlay);
+                mediaHoverOverlay.addEventListener('click', hideOverlay);
+              }, 200); // 200ms delay to stabilize hover
+            });
+  
+            mediaChild.addEventListener('mouseleave', () => {
+              // Clear timeout if mouse leaves before overlay appears
+              if (hoverTimeoutId) {
+                clearTimeout(hoverTimeoutId);
+              }
+            });
+            
+            optionElement.appendChild(mediaChild);
+          }
+
+          const label = document.createElement('span');
+          label.textContent = option.label;
+          optionElement.appendChild(label);
+
+            // Lógica de selección
+            optionElement.addEventListener('click', () => {
+                if (mode === 'single') {
+                    // Modo single: selección inmediata
+                    document.body.removeChild(modal);
+                    resolve({ values: [option.value] });
+                } else {
+                    // Modo multi: toggle selección
+                    const checkbox = optionElement.querySelector('input[type="checkbox"]');
+                    checkbox.checked = !checkbox.checked;
+                    if (checkbox.checked) {
+                        currentlySelectedValues.add(option.value);
+                        optionElement.style.backgroundColor = currentColors.selectedBackground;
+                        optionElement.style.color = currentColors.selectedText;
+                    } else {
+                        currentlySelectedValues.delete(option.value);
+                        optionElement.style.backgroundColor = currentColors.background;
+                        optionElement.style.color = currentColors.text;
+                    }
+                }
+            });
+
+            optionElements.push(optionElement);
+            optionList.appendChild(optionElement);
+        });
+
+        // Botones para modo multi
+        if (mode === 'multi') {
+            const confirmButton = document.createElement('button');
+            confirmButton.textContent = 'Confirmar Selección';
+            confirmButton.style.cssText = `
+                margin-top: 1rem;
+                padding: 0.5rem 1rem;
+                background-color: ${currentColors.selectedBackground};
+                color: ${currentColors.selectedText};
+                border: none;
+                border-radius: 0.25rem;
+                cursor: pointer;
+            `;
+
+            confirmButton.addEventListener('click', () => {
+                document.body.removeChild(modal);
+                resolve({
+                    values: Array.from(currentlySelectedValues)
+                });
+            });
+
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = 'Cancelar';
+            cancelButton.style.cssText = `
+                margin-top: 1rem;
+                margin-left: 0.5rem;
+                padding: 0.5rem 1rem;
+                background-color: ${currentColors.cancelBg};
+                color: ${currentColors.text};
+                border: 1px solid ${currentColors.border};
+                border-radius: 0.25rem;
+                cursor: pointer;
+            `;
+
+            cancelButton.addEventListener('click', () => {
+                document.body.removeChild(modal);
+                reject();
+            });
+
+            // Agregar buscador, lista de opciones y botones
+            modalContent.appendChild(searchInput);
+            modalContent.appendChild(optionList);
+            modalContent.appendChild(confirmButton);
+            modalContent.appendChild(cancelButton);
+        } else {
+            // Modo single: buscador y opciones
+            modalContent.appendChild(searchInput);
+            modalContent.appendChild(optionList);
+        }
+
+        // Agregar contenido al modal
+        modal.appendChild(modalContent);
+
+        // Evento para cerrar al hacer clic fuera
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                document.body.removeChild(modal);
+                reject();
+            }
+        });
+
+        // Prevenir que los clics dentro del contenido se propaguen y cierren el modal
+        modalContent.addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
+
+        // Agregar al documento
+        document.body.appendChild(modal);
+
+        // Enfocar buscador al abrir
+        searchInput.focus();
+    });
+}
+  /**
+   * Method to set external options
+   * @param {Array} options - List of options with `value`, `label`, and optional `description`
+   */
+  setOptions(options) {
+      this.options = options;
+  }
+  normalizeValue(value) {
+      // For primitive types (number, string, boolean), return as-is
+      if (['number', 'string', 'boolean'].includes(typeof value)) {
+          return value;
+      }
+      
+      // For objects and arrays, use JSON stringify
+      return JSON.stringify(value);
+  }
+
+  get value() {
+      return this.mode === 'single' ? this.selectedValues[0] : this.selectedValues;
+  }
+
+  toggleDarkMode() {
+      this.isDarkMode = !this.isDarkMode;
+      if (this.isDarkMode) {
+          this.classList.add('dark');
+      } else {
+          this.classList.remove('dark');
+      }
+      
+      // Dispatch dark mode change event
+      this.dispatchEvent(new CustomEvent('darkModeChange', {
+          detail: { isDarkMode: this.isDarkMode },
+          bubbles: true
+      }));
+  }
+      set value(newValues) {
+      const valuesArray = Array.isArray(newValues) ? newValues : [newValues];
+      this.setValues(valuesArray);
+  }
+
+}
+
+customElements.define('flexible-modal-selector', FlexibleModalSelector);
+
+class DynamicForm extends HTMLElement {
+constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+    this.fields = [];
+    this.initialState = null;
+    this.conditionalFields = new Map(); // Mapa para almacenar las relaciones condicionales
+    this.beforeFormElements = []; // Nueva propiedad para almacenar elementos antes del formulario
+    this.formConfig = {
+        submitLabel: 'Submit',
+        class: 'form-default',
+        validateOnSubmit: true
+    };
+    this.boundHandleSubmit = this.handleSubmit.bind(this);
+    const template = document.createElement('template');
+    template.innerHTML = /*html*/ `
+        <style>
+            :host {
+                display: block;
+                font-family: system-ui, -apple-system, sans-serif;
+                width: 100%;
+            }
+              .form-row {                 
+                  border: 0.15rem solid transparent;
+                  transition: all 0.5s ease;
+              }
+              .form-row:hover {
+                  border-color:rgba(244, 244, 244, 0.6);
+                  border-radius: 0.375rem;
+                  margin: 0.1rem;
+                  padding: 0.1rem             
+              }
+            .form-default {
+                max-height: 90dvh;
+                overflow-y: auto;
+                padding: 1rem;
+                border-radius: 0.5rem;
+                background: white;
+                box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+                display: grid
+            }
+            .hidden {
+                display: none;
+            }
+            .w-full {
+                width: 100%;
+            }
+            .flex {
+                display: flex;
+            }
+            .justify-center {
+                justify-content: center;
+            }
+            .items-center {
+                align-items: center;
+            }
+            .justify-between {
+                justify-content: space-between;
+            }
+            .text-justify {
+                text-align: justify;
+            }
+            .form-group {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 0.5rem;
+                transition: all 0.5s ease;
+                gap: 0.5rem;
+                label {
+                    margin-left: 10px;
+                    font-size: 16px;
+                }
+            }
+            .radio-group {
+                
+            }
+            .radio-item {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                flex-wrap: wrap;    
+                flex-flow: row-reverse;
+                justify-content: space-between;
+                label {
+                    font-weight: 600;
+                }
+            }
+            .form-group input[type="checkbox"] {
+                width: 20px; /* Tamaño constante del checkbox */
+                height: 20px; /* Tamaño constante del checkbox */
+                appearance: none; /* Elimina el estilo predeterminado del checkbox */
+                background-color: #f0f0f0; /* Color de fondo cuando no está chequeado */
+                border: 2px solid #ccc; /* Color del borde */
+                border-radius: 4px; /* Bordes redondeados */
+                transition: background-color 0.3s ease, border-color 0.3s ease; /* Transiciones suaves para el color */
+                outline: none; /* Elimina el contorno */
+                cursor: pointer; /* Cambia el cursor al pasar sobre el checkbox */
+            }
+
+            .form-group input[type="checkbox"]:checked {
+                background-color: #668ffd; /* Color de fondo cuando está chequeado */
+                border-color: #786bb4; /* Color del borde cuando está chequeado */
+            }
+
+            label {
+                display: flex;
+                color: #374151;
+            }
+            input, select, textarea {
+                min-width: 2.1rem;
+                min-height: 2.1rem;
+                width: auto;
+                padding: 0.5rem;
+                border: 1px solid #d1d5db;
+                border-radius: 0.375rem;
+                font-size: 1rem;
+            }
+            input[type="number"]  {max-width: 5rem; box-sizing: content-box;}
+            input:focus, select:focus, textarea:focus {
+                outline: none;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+            .error-message {
+                color: #dc2626;
+                font-size: 0.875rem;
+                margin-top: 0.25rem;
+            }
+            button[type="submit"] {
+                background-color: #3b82f6;
+                color: white;
+                padding: 0.5rem 1rem;
+                border: none;
+                border-radius: 0.375rem;
+                font-size: 1rem;
+                cursor: pointer;
+                transition: background-color 0.2s;
+            }
+            button[type="submit"]:hover {
+                background-color: #2563eb;
+            }
+            .required label::after {
+                content: " *";
+                color: #dc2626;
+            }
+            .hidden-field {
+                  max-height: 0;
+                  opacity: 0;
+                  overflow: hidden;
+                  margin: 0;
+                  padding: 0;
+                  transition: 
+                      max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                      opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                      transform 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                      margin 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                      padding 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+                  pointer-events: none;
+                  visibility: hidden;
+              }
+
+          .show {
+              width: auto;
+              opacity: 1;
+              transform: scale(1);
+              overflow: visible;
+          }
+
+            .disabled {
+                pointer-events: none;
+                opacity: 0.5;
+            }
+        </style>
+        <form></form>
+    `;
+
+    this.shadowRoot.appendChild(template.content.cloneNode(true));
+    this.form = this.shadowRoot.querySelector('form');
+    const styleTag = this.shadowRoot.querySelector('style');
+    styleTag.textContent += `
+        /* Dark Mode Styles */
+        .form-default.dark-mode {
+            background: #1f2937;
+            color: #f9fafb;
+            box-shadow: 0 1px 3px 0 rgb(255 255 255 / 0.1);
+        }
+        
+        .dark-mode label {
+            color: #e5e7eb;
+        }
+        
+        .dark-mode input, 
+        .dark-mode select, 
+        .dark-mode textarea {
+            background-color: #2d3748;
+            color: #f9fafb;
+            border-color: #4a5568;
+        }
+        
+        .dark-mode input[type="checkbox"] {
+            background-color: #4a5568;
+            border-color: #718096;
+        }
+        
+        .dark-mode input[type="checkbox"]:checked {
+            background-color: #4299e1;
+            border-color: #3182ce;
+        }
+        
+        .dark-mode .error-message {
+            color: #fc8181;
+        }
+        
+        .dark-mode button[type="submit"] {
+            background-color: #4299e1;
+            color: white;
+        }
+        
+        .dark-mode button[type="submit"]:hover {
+            background-color: #3182ce;
+        }
+    `;
+    this.formConfig.darkMode = false;
+    //this.emitchanges();
+}
+reRender(initialData = null) {
+  // If initial data is provided, update the initial state
+
+  this.filldata(initialData);
+  // Clear existing form and re-render
+  this.render();
+
+  return this;
+}
+filldata(initialData) {
+    if (initialData) {
+      this.initialState = this._deepClone(initialData);
+      console.log("initialState", this.initialState, initialData, this._deepClone(initialData));
+      
+      // Update field values based on the new initial data  
+      this.fields.forEach(field => {
+          // Check if the field exists in the initial data
+          if (this.initialState[field.name] !== undefined) {
+              // Handle different field types
+              switch (field.type) {
+                  case 'checkbox':
+                      // Explicitly set checked state for checkboxes
+                      field.checked = typeof this.initialState[field.name] === 'boolean' 
+                      ? this.initialState[field.name] 
+                      : !!this.initialState[field.name];
+                      break;
+                  case 'radio':
+                      // For radio buttons, set the value
+                      field.value = this.initialState[field.name];
+                      break;
+                  default:
+                      // For other field types, set the value
+                      field.value = this.initialState[field.name];
+              }
+              
+              console.log("restoreInitialState", field.name, this.initialState[field.name]);
+          }
+      });
+  }
+}
+updateFieldOptions(fieldName, newOptions) {
+    // Buscar el campo en la configuración de campos
+    const field = this.fields.find(f => f.name === fieldName);
+    
+    if (field) {
+        // Actualizar las opciones en la configuración del campo
+        field.options = newOptions;
+        
+        // Buscar el elemento en el DOM
+        const fieldElement = this.form.querySelector(`[name="${fieldName}"]`);
+        
+        if (fieldElement) {
+            switch (field.type) {
+                case 'select':
+                    // Limpiar opciones existentes
+                    fieldElement.innerHTML = '';
+                    
+                    // Añadir nuevas opciones
+                    newOptions.forEach(option => {
+                        const optionElement = document.createElement('option');
+                        optionElement.value = option.value;
+                        optionElement.textContent = option.label;
+                        fieldElement.appendChild(optionElement);
+                    });
+                    break;
+                
+                case 'modal-selector':
+                case 'flexible-modal-selector':
+                    // Usar el método setOptions del componente personalizado
+                    fieldElement.setOptions(newOptions);
+                    break;
+                
+                case 'radio':
+                    // Rerender el grupo de radio buttons
+                    const radioGroup = fieldElement.closest('.radio-group');
+                    if (radioGroup) {
+                        radioGroup.innerHTML = '';
+                        newOptions.forEach(option => {
+                            const radioWrapper = document.createElement('div');
+                            radioWrapper.className = 'radio-item';
+                            
+                            const radioInput = document.createElement('input');
+                            radioInput.type = 'radio';
+                            radioInput.id = `${fieldName}_${option.value}`;
+                            radioInput.name = fieldName;
+                            radioInput.value = option.value;
+                            
+                            const radioLabel = document.createElement('label');
+                            radioLabel.setAttribute('for', `${fieldName}_${option.value}`);
+                            radioLabel.textContent = option.label;
+                            
+                            radioWrapper.appendChild(radioInput);
+                            radioWrapper.appendChild(radioLabel);
+                            radioGroup.appendChild(radioWrapper);
+                        });
+                    }
+                    break;
+            }
+        }
+    }
+    
+    return this;
+}
+updateFieldAttribute(fieldName, attribute, value) {
+  const field = this.fields.find(f => f.name === fieldName);
+  
+  if (field) {
+      // Actualizar el atributo en la configuración del campo
+      field[attribute] = value;
+      
+      const fieldElement = this.form.querySelector(`[name="${fieldName}"]`);
+      
+      if (fieldElement) {
+          switch (attribute) {
+              case 'required':
+                  fieldElement.required = value;
+                  break;
+              case 'disabled':
+                  fieldElement.disabled = value;
+                  break;
+              case 'min':
+              case 'max':
+              case 'step':
+                  if (fieldElement.tagName === 'INPUT') {
+                      fieldElement[attribute] = value;
+                  }
+                  break;
+              // Puedes agregar más casos según sea necesario
+          }
+      }
+  }
+  
+  return this;
+}
+_deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+}
+addBeforeForm(elementConfig) {
+    const defaultConfig = {
+        type: 'div', // Tipo de elemento por defecto
+        content: '', // Contenido del elemento
+        className: '', // Clases CSS opcionales
+        attributes: {}, // Atributos adicionales
+        eventListeners: [] // Listeners de eventos opcionales
+    };
+
+    const config = { ...defaultConfig, ...elementConfig };
+    
+    // Crear el elemento
+    const element = document.createElement(config.type);
+    
+    // Añadir contenido
+    if (config.content) {
+        element.innerHTML = config.content;
+    }
+    
+    // Añadir clases
+    if (config.className) {
+        element.className = config.className;
+    }
+    
+    // Añadir atributos
+    Object.entries(config.attributes).forEach(([key, value]) => {
+        element.setAttribute(key, value);
+    });
+    
+    // Añadir event listeners
+    config.eventListeners.forEach(({ event, handler }) => {
+        element.addEventListener(event, handler);
+    });
+    
+    // Almacenar el elemento para renderizarlo después
+    this.beforeFormElements.push(element);
+    
+    return this;
+}
+initialize(initialData = null,config = {}) {
+    // Limpiar estado previo
+    this.fields = [];
+    this.formConfig = {
+        submitLabel: 'Submit',
+        class: 'form-default',
+        validateOnSubmit: true,
+        ...config
+    };
+    this.filldata(initialData);
+    // Remover el formulario anterior y crear uno nuevo
+    const oldForm = this.shadowRoot.querySelector('form');
+    if (oldForm) {
+        oldForm.remove();
+    }
+    
+    const newForm = document.createElement('form');
+    newForm.className = this.formConfig.class;
+    this.shadowRoot.appendChild(newForm);
+    this.form = newForm;
+    return this;
+}
+setSubmitButton(options = {}) {
+  const submitButton = this.form.querySelector('button[type="submit"]');
+    if (submitButton) {
+        if (options.label) submitButton.textContent = options.label;
+        if (options.disabled !== undefined) submitButton.disabled = options.disabled;
+        if (options.className) submitButton.className = options.className;
+    }
+    return this;
+}
+addField(fieldConfig, options = {}) {
+    const defaultConfig = {
+        type: 'text',
+        required: false,
+        label: '',
+        name: '',
+        placeholder: '',
+        value: '',
+        options: [],
+        validators: [],
+        errorMessage: '',
+        pattern: '',
+        title: '',
+        showWhen: null // Nuevo: Configuración para mostrar condicionalmente
+    };
+    const config = { ...defaultConfig, ...fieldConfig,
+        rowGroup: options.rowGroup || null
+    };
+    // Si el campo tiene condiciones, registrarlas
+    if (config.showWhen) {
+        const { field: parentField, value: triggerValue } = config.showWhen;
+        if (!this.conditionalFields.has(parentField)) {
+            this.conditionalFields.set(parentField, []);
+        }
+        this.conditionalFields.get(parentField).push({
+            fieldName: config.name,
+            triggerValue
+        });
+    }
+
+    // Si hay estado inicial y existe un valor para este campo, usarlo
+    if (this.initialState && this.initialState[config.name] !== undefined) {
+        config.value = this.initialState[config.name];
+    }
+
+
+    this.fields.push(config);
+    return this;
+}
+
+createFieldHTML(field) {
+    const wrapper = document.createElement('div');
+    wrapper.className = `form-group ${field.required ? 'required' : ''}`;
+    wrapper.setAttribute('data-field', field.name);
+    //console.log("init field",field)
+    if (field.showWhen) {
+        wrapper.classList.add('hidden-field');
+    }
+
+    const label = document.createElement('label');
+    label.textContent = field.label;
+    label.setAttribute('for', field.name);
+    wrapper.appendChild(label);
+
+    let input;
+
+    //addField config
+    switch (field.type) {
+        case 'flexible-modal-selector':
+            input = document.createElement('flexible-modal-selector');
+            input.id = field.name;
+            input.setAttribute('name', field.name);
+            input.setAttribute('mode', field.mode || 'single');
+            input.setAttribute('theme', field.theme || 'light');
+            input.toggleDarkMode();
+            // Configurar el evento change del modal-selector
+            input.addEventListener('change', (e) => {
+                // Si hay campos condicionales que dependen de este
+                if (this.conditionalFields.has(field.name)) {
+                    this.handleFieldChange(field.name, e.detail.values);
+                }
+            });
+            
+            if (field.options) input.setOptions(field.options);
+            // Si hay un valor inicial, establecerlo
+            if (field.value) {
+                input.setValues(field.value);
+            }
+            break;
+        case 'modal-selector': // Nuevo tipo para el selector modal
+            input = document.createElement('modal-selector');
+            input.id = field.name;
+            input.setAttribute('name', field.name);
+            
+            // Configurar el evento change del modal-selector
+            input.addEventListener('change', (e) => {
+                // Si hay campos condicionales que dependen de este
+                if (this.conditionalFields.has(field.name)) {
+                    this.handleFieldChange(field.name, e.detail.value);
+                }
+            });
+            if (field.options) input.setOptions(field.options);
+            // Si hay un valor inicial, establecerlo
+            if (field.value) {
+                input.setValue(field.value, field.valueLabel || field.value);
+            }
+            break;
+        case 'radio':
+            const radioContainer = document.createElement('div');
+            radioContainer.className = 'radio-group';
+            
+            field.options.forEach(option => {
+                const radioWrapper = document.createElement('div');
+                radioWrapper.className = 'radio-item';
+                
+                const radioInput = document.createElement('input');
+                radioInput.type = 'radio';
+                radioInput.id = `${field.name}_${option.value}`;
+                radioInput.name = field.name;
+                radioInput.value = option.value;
+                
+                if (field.value === option.value) {
+                    radioInput.checked = true;
+                }
+                
+                if (field.required) {
+                    radioInput.required = true;
+                }
+                
+                // Agregar evento change para campos condicionales
+                radioInput.addEventListener('change', () => this.handleFieldChange(field.name, option.value));
+                
+                const radioLabel = document.createElement('label');
+                radioLabel.setAttribute('for', `${field.name}_${option.value}`);
+                radioLabel.textContent = option.label;
+                
+                radioWrapper.appendChild(radioInput);
+                radioWrapper.appendChild(radioLabel);
+                radioContainer.appendChild(radioWrapper);
+            });
+            
+            input = radioContainer;
+            break;
+
+        case 'select':
+            input = document.createElement('select');
+            field.options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option.value;
+                optionElement.textContent = option.label;
+                if (field.value === option.value) {
+                    optionElement.selected = true;
+                }
+                input.appendChild(optionElement);
+            });
+            
+            // Agregar evento change para campos condicionales
+            if (this.conditionalFields.has(field.name)) {
+                input.addEventListener('change', (e) => this.handleFieldChange(field.name, e.target.value));
+            }
+            break;
+            
+        case 'textarea':
+            input = document.createElement('textarea');
+            input.rows = field.rows || 3;
+            input.value = field.value;
+            break;
+        case 'links':
+          // creamos elementos de url solamente de referencia no es un input
+            input = document.createElement('div');
+            input.className = 'input-default';
+            input.innerHTML = `
+              <div class="flex flex-row gap-2">
+                  <a href="${field.value[0]}" target="_blank" class="text-blue-500 hover:text-blue-600">${field.value[0]}</a>
+                  <a href="${field.value[1]}" target="_blank" class="text-blue-500 hover:text-blue-600">${field.value[1]}</a>
+              </div>
+            `;
+            break;
+          case 'content':
+              input = document.createElement('div');
+              if (field.className) input.className = field.className;
+              input.innerHTML = `
+                <div class="input-default">
+                  ${field.label || field.value}
+                </div>
+              `;
+              break;
+        default:
+            //console.log("field",field)
+            input = document.createElement('input');
+            input.type = field.type;
+            input.value = field.value;
+            if(field.min) input.min = field.min;
+            if(field.max) input.max = field.max;
+            if(field.step) input.step = field.step;
+            if(field.placeholder) input.placeholder = field.placeholder;
+            if(field.required) input.required = true;
+            if(field.value) input.value = field.value;
+            if(field.pattern) input.pattern = field.pattern;
+            if ('checked' in input) {
+                // Check if field.value is boolean
+                if (typeof field.value === 'boolean') {
+                    input.checked = field.value;
+                    field.checked = field.value;
+                    input.value = field.value.toString();
+                } 
+                // Check if field.checked is boolean
+                if (typeof field.checked === 'boolean') {
+                    input.checked = field.checked;
+                    input.value = field.checked.toString();
+                }
+            }
+            if(field.hidden) input.classList.add('hidden');
+            if(field.readonly) input.readOnly = true;
+            if(field.disabled) input.disabled = true;
+            if(field.className) input.className = field.className;
+            setTimeout(() => {
+              if (input)this.handleFieldChange(field.name, field.checked || field.value);
+            }, 100);
+            input.addEventListener('change', (e) => {
+                this.handleFieldChange(field.name, e.target.checked || e.target.value);
+            });
+    }
+    
+    if (field.type !== 'radio') {
+        input.id = field.name;
+        input.name = field.name;
+        input.placeholder = field.placeholder;
+        if (field.required) input.required = true;
+    }
+    
+    wrapper.appendChild(input);
+    
+    if (field.errorMessage) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.textContent = field.errorMessage;
+        wrapper.appendChild(errorDiv);
+    }
+    
+    return wrapper;
+}
+getValues() {
+    const formData = new FormData(this.form);
+    const values = {};
+    
+    // Iteramos sobre los campos definidos en lugar de FormData
+    this.fields.forEach(field => {
+        const element = this.form.querySelector(`[name="${field.name}"]`);
+        
+        if (!element) return;
+
+        switch (field.type) {
+          case 'flexible-modal-selector':
+              // For flexible-modal-selector, parse the value
+              const rawValue = element.value;
+              if (rawValue !== undefined && rawValue !== null) {
+                values[field.name] = typeof rawValue === 'string' && rawValue.includes(',')
+                    ? rawValue.split(',').map(v => v.trim())  // Múltiples valores como cadena
+                    : Array.isArray(rawValue) 
+                        ? rawValue  // Ya es un arreglo
+                        : rawValue;  // Número u otro tipo, envuelto en un arreglo
+            }
+              break;
+            case 'checkbox':
+                // Para checkboxes, usamos la propiedad checked
+                values[field.name] = element.checked;
+                break;
+                
+            case 'number':
+            case 'range':
+                // Para números, convertimos el valor a número
+                const numValue = element.value === '' ? null : Number(element.value);
+                values[field.name] = numValue;
+                break;
+                
+            case 'radio':
+                // Para radio buttons, obtenemos el valor del seleccionado
+                const checkedRadio = this.form.querySelector(`input[name="${field.name}"]:checked`);
+                values[field.name] = checkedRadio ? checkedRadio.value : null;
+                break;
+                
+            default:
+                // Para el resto de tipos, usamos el valor directo
+                values[field.name] = formData.get(field.name);
+        }
+    });
+    
+    return values;
+}
+
+validateField(field, value) {
+    // Modificamos la validación para manejar correctamente los tipos
+    if (field.required) {
+        switch (field.type) {
+            case 'checkbox':
+                // Para checkbox requerido, debe estar marcado
+                if (!value) return 'Este campo es requerido';
+                break;
+                
+            case 'number':
+            case 'range':
+                // Para números, verificamos que no sea null o undefined
+                if (value === null || value === undefined) return 'Este campo es requerido';
+                break;
+                
+            default:
+                // Para otros tipos, verificamos que no esté vacío
+                if (!value && value !== 0) return 'Este campo es requerido';
+        }
+    }
+
+    // Ejecutamos los validadores personalizados
+    for (const validator of field.validators) {
+        const errorMessage = validator(value);
+        if (errorMessage) return errorMessage;
+    }
+
+    return '';
+}
+
+
+render() {
+    this.form.removeEventListener('submit', this.boundHandleSubmit);
+    this.form.innerHTML = '';
+    
+    // Group fields by row
+    const rowGroups = new Map();
+    this.fields.forEach(field => {
+        if (field.rowGroup) {
+            if (!rowGroups.has(field.rowGroup)) {
+                rowGroups.set(field.rowGroup, []);
+            }
+            rowGroups.get(field.rowGroup).push(field);
+        }
+    });
+            // Render fields
+    this.fields.forEach(field => {
+        // Skip fields that are part of a row group (they'll be rendered together)
+        if (field.rowGroup) return;
+
+        const fieldElement = this.createFieldHTML(field);
+        this.form.appendChild(fieldElement);
+    });
+
+    rowGroups.forEach(rowFields => {
+        const rowContainer = document.createElement('div');
+        rowContainer.className = 'form-row';
+
+        rowFields.forEach(field => {
+            const fieldElement = this.createFieldHTML(field);
+            rowContainer.appendChild(fieldElement);
+        });
+
+        this.form.appendChild(rowContainer);
+    });
+    this.conditionalFields.forEach((_, parentFieldName) => {
+        const parentField = this.fields.find(f => f.name === parentFieldName);
+        if (parentField) {
+            let currentValue;
+            if (parentField.type === 'radio') {
+                const checkedRadio = this.form.querySelector(`input[name="${parentFieldName}"]:checked`);
+                currentValue = checkedRadio ? checkedRadio.value : null;
+            } else {
+                const input = this.form.querySelector(`[name="${parentFieldName}"]`);
+                currentValue = input ? input.value : null;
+            }
+            if (currentValue) {
+                this.handleFieldChange(parentFieldName, currentValue);
+            }
+        }
+    });
+
+    const submitButton = document.createElement('button');
+    submitButton.type = 'submit';
+    submitButton.textContent = this.formConfig.submitLabel;
+    this.form.appendChild(submitButton);
+
+    this.form.addEventListener('submit', this.boundHandleSubmit);
+/*       this.fields.forEach(field => {
+      const inputs = this.form.querySelectorAll(`[name="${field.name}"]`);
+      //console.log("input",input)
+      inputs.forEach(input => {
+          ['change','input'].forEach(eventType => {
+             input.addEventListener(eventType, () => {
+              this.emitchanges()
+             });
+         });
+      })
+    }); */
+    this.beforeFormElements.forEach(element => {
+        this.form.appendChild(element);
+    });
+    return this;
+}
+clearBeforeFormElements() {
+    this.beforeFormElements = [];
+    return this;
+}
+toggleDarkMode(enabled = !this.formConfig.darkMode) {
+    this.formConfig.darkMode = enabled;
+    const formContainer = this.shadowRoot.querySelector('form');
+    if (!this.shadowRoot.querySelector('.form-default')) {
+      formContainer.classList.add('form-default');
+    };
+
+    if (enabled) {
+        formContainer.classList.add('dark-mode');
+    } else {
+        formContainer.classList.remove('dark-mode');
+    }
+}
+emitchanges(){
+  this.dispatchEvent(new CustomEvent('form-change', {
+                  detail: this.getValues(),
+                  bubbles: true,
+                  composed: true
+              }));
+}
+disconnectedCallback() {
+    if (this.form) {
+        this.form.removeEventListener('submit', this.boundHandleSubmit);
+        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+        this.toggleDarkMode(prefersDarkScheme.matches);
+
+        prefersDarkScheme.addListener((e) => {
+            this.toggleDarkMode(e.matches);
+        });
+
+    }
+}
+handleFieldChange(fieldName, value) {
+  const dependentFields = this.conditionalFields.get(fieldName) || [];
+  this.emitchanges()
+  dependentFields.forEach(({ fieldName: dependentFieldName, triggerValue }) => {
+      const fieldElement = this.form.querySelector(`[data-field="${dependentFieldName}"]`);
+      if (!fieldElement) return;
+        // Si triggerValue es un array, verificamos si el valor está incluido
+        const shouldShow = Array.isArray(triggerValue) 
+          ? triggerValue.includes(value)
+          : triggerValue === value;
+      
+          fieldElement.classList.toggle('hidden-field', !shouldShow);
+          
+          // Instantly add/remove 'show' class
+          if (shouldShow) {
+              fieldElement.classList.add('show');
+          } else {
+              fieldElement.classList.remove('show');
+          }
+
+
+        // Si el campo está oculto, limpiamos su valor
+/*           if (!shouldShow) {
+                  const input = fieldElement.querySelector('input, select, textarea');
+                  if (input) {
+                    if (input.type === 'radio') {
+                        const radios = fieldElement.querySelectorAll('input[type="radio"]');
+                        radios.forEach(radio => radio.checked = false);
+                    }
+                  if (input.type === 'checkbox') {
+                      input.checked = false;
+                  }
+            }
+      }  */
+    });
+}
+handleSubmit(e) {
+    e.preventDefault();
+        
+    if (this.formConfig.validateOnSubmit) {
+        let isValid = true;
+        const values = this.getValues();
+
+        this.fields.forEach(field => {
+            const errorMessage = this.validateField(field, values[field.name]);
+            if (errorMessage) {
+                isValid = false;
+                const fieldElement = this.form.querySelector(`[name="${field.name}"]`);
+                const errorDiv = fieldElement.parentNode.querySelector('.error-message') ||
+                    document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = errorMessage;
+                if (!fieldElement.parentNode.querySelector('.error-message')) {
+                    fieldElement.parentNode.appendChild(errorDiv);
+                }
+            }
+        });
+
+        if (!isValid) return;
+    }
+
+    this.dispatchEvent(new CustomEvent('form-submit', {
+        detail: this.getValues(),
+        bubbles: true,
+        composed: true
+    }));
+}
+
+}
+
+customElements.define('dynamic-form', DynamicForm);

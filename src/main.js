@@ -15,3 +15,43 @@ const slides = [
   ];
 const carousel = document.querySelector("infinite-carousel");
 carousel.setSlides(slides);
+const form = document.querySelector('#myform');
+form.initialize()
+    .addField({
+      type: 'text',
+      name: 'nombre_completo',
+      label: 'nombre completo',
+      placeholder: 'nombre completo',
+      required: true,
+  })
+    .addField({
+      type: 'email',
+      name: 'email',
+      label: 'email',
+      placeholder: 'email',
+      required: true,
+  })
+    .addField({
+      type: 'tel',
+      name: 'numero',
+      label: 'numero',
+      value: '',
+      pattern:"(0[2-7]-[0-9]{7})|(09[0-9]{8})",
+      required: true,
+  })
+  .addField({
+    type: 'textarea',
+    name: 'texto',
+    label: 'texto',
+    placeholder: 'texto',
+})
+.render()
+.toggleDarkMode()
+
+form.addEventListener('form-change', (e) => {
+    console.log('form-change', e.detail);
+});
+
+form.addEventListener('form-submit', (e) => {
+    console.log('form-submit', e.detail);
+});
