@@ -52,8 +52,8 @@ class CustomCard extends HTMLElement {
           }
           
           button {
-            background-color: #646cff;
-            color: white;
+            background-color: #d4f63b;
+            color: black;
             border: none;
             padding: 8px 16px;
             border-radius: 4px;
@@ -62,7 +62,7 @@ class CustomCard extends HTMLElement {
           }
           
           button:hover {
-            background-color: #535bf2;
+            background-color:rgba(212, 246, 59, 0.82);
           }
         @media (max-width: 768px) {
 
@@ -218,3 +218,100 @@ class StatCard extends HTMLElement {
   }
   
   customElements.define('stat-card', StatCard);
+  class EventCard extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: 'open' });
+    }
+  
+    static get observedAttributes() {
+      return ['location', 'date', 'image'];
+    }
+  
+    connectedCallback() {
+      this.render();
+    }
+  
+    attributeChangedCallback() {
+      this.render();
+    }
+  
+    render() {
+      const location = this.getAttribute('location') || '';
+      const date = this.getAttribute('date') || '';
+      const image = this.getAttribute('image') || '';
+      const features = this.getAttribute('features')?.split(',') || [];
+  
+      this.shadowRoot.innerHTML = `
+        <style>
+          .card {
+            background:rgb(17, 17, 17);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 300px;
+            margin: 1rem;
+          }
+          
+          .card-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+          }
+          
+          .card-content {
+            padding: 1rem;
+          }
+          
+          .location {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: rgb(255, 255, 255);
+          }
+          
+          .date {
+            color: rgb(233, 233, 233);
+            margin-bottom: 1rem;
+          }
+          
+          .features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            color: rgb(41, 41, 41);
+          }
+          
+          .feature-link {
+            text-decoration: none;
+            color: #646cff;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            background:rgb(36, 36, 36);
+            transition: background 0.3s;
+          }
+          
+          .feature-link:hover {
+            background:rgb(49, 49, 49);
+          }
+        </style>
+        
+        <div class="card">
+          ${image ? `<img src="${image}" alt="${location}" class="card-image">` : ''}
+          <div class="card-content">
+            <div class="location">${location}</div>
+            <div class="date">${date}</div>
+            <div class="features">
+              ${features.map(feature => `
+                   <li>
+                <a href="#${feature.trim()}" class="feature-link">${feature.trim()}</a>
+                                   </li>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  }
+  
+  customElements.define('event-card', EventCard);

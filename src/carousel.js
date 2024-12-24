@@ -18,12 +18,15 @@ class InfiniteCarousel extends HTMLElement {
           height: 400px;
           position: relative;
           overflow: hidden;
+          margin-block: 1rem;
+          padding-block: 1rem;
         }
   
         .carousel-container {
           width: 100%;
           height: 100%;
           position: relative;
+
         }
   
         .slide {
@@ -40,7 +43,6 @@ class InfiniteCarousel extends HTMLElement {
           justify-content: center;
           text-align: center;
           color: white;
-          padding-block: 2rem;
         }
   
         .slide.active {
@@ -64,8 +66,10 @@ class InfiniteCarousel extends HTMLElement {
           background: rgba(0, 0, 0, 0.5);
           padding: 20px;
           border-radius: 8px;
-          max-width: 80%;
+          max-width: 800px;
+          margin: auto;
           z-index: 1;
+
         }
   
         .slide-title {
@@ -87,8 +91,8 @@ class InfiniteCarousel extends HTMLElement {
           position: absolute;
           top: 50%;
           transform: translateY(-50%);
-          background: rgba(255, 255, 255, 0.3);
-          border: none;
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.3);
           color: white;
           padding: 10px 15px;
           cursor: pointer;

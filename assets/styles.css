@@ -81,6 +81,12 @@
     .dual-grid {
         grid-template-columns: 1fr;
     }
+    .m-5 {
+        margin: 0rem;
+    }
+    .p-5 {
+        padding: 0.25rem;
+    }
 }
 .font-size-8 {
     font-size: 2rem;
