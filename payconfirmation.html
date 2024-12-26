@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmación de Pago</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <!-- Componente inicial con valores predeterminados -->
+  <payment-confirmation 
+    id="confirmation"
+    title="¡Pago exitoso!" 
+    subtitle="Gracias por tu compra. Recibirás un correo con los detalles." 
+    image="./assets/image1.png">
+  </payment-confirmation>
+
+  <script>
+    class PaymentConfirmation extends HTMLElement {
+      constructor() {
+        super();
+
+        // Attach Shadow DOM
+        this.shadow = this.attachShadow({ mode: 'open' });
+
+        // Crear contenedor principal
+        this.container = document.createElement('div');
+        this.container.classList.add('container');
+
+        // Agregar estilos
+        const style = document.createElement('style');
+        style.textContent = `
+          .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+          }
+          img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin-bottom: 20px;
+          }
+          h1 {
+            font-size: 1.8em;
+            margin: 0 0 10px;
+            color: #4caf50;
+          }
+          p {
+            font-size: 1em;
+            margin: 0;
+            color: #cccccc;
+          }
+          @media (prefers-color-scheme: light) {
+            .container {
+              background-color: #ffffff;
+              color: #000000;
+            }
+            h1 {
+              color: #4caf50;
+            }
+            p {
+              color: #555555;
+            }
+          }
+        `;
+
+        // Crear elementos
+        this.img = document.createElement('img');
+        this.titleElement = document.createElement('h1');
+        this.subtitleElement = document.createElement('p');
+
+        // Asignar valores iniciales desde los atributos
+        this.img.src = this.getAttribute('image') || '';
+        this.titleElement.textContent = this.getAttribute('title') || 'Título';
+        this.subtitleElement.textContent = this.getAttribute('subtitle') || 'Subtítulo';
+
+        // Construir estructura
+        this.container.appendChild(this.img);
+        this.container.appendChild(this.titleElement);
+        this.container.appendChild(this.subtitleElement);
+        this.shadow.appendChild(style);
+        this.shadow.appendChild(this.container);
+      }
+
+      // Observar cambios en los atributos
+      static get observedAttributes() {
+        return ['title', 'subtitle', 'image'];
+      }
+
+      attributeChangedCallback(name, oldValue, newValue) {
+        // Validar y actualizar los elementos según el atributo modificado
+        if (name === 'title' && this.titleElement) {
+          this.titleElement.textContent = newValue;
+        } else if (name === 'subtitle' && this.subtitleElement) {
+          this.subtitleElement.textContent = newValue;
+        } else if (name === 'image' && this.img) {
+          this.img.src = newValue;
+        }
+      }
+    }
+
+    // Registrar el elemento personalizado
+    customElements.define('payment-confirmation', PaymentConfirmation);
+
+    // Modificar dinámicamente los atributos después de 2 segundos
+    const confirmation = document.querySelector('#confirmation');
+    setTimeout(() => {
+      confirmation.setAttribute('title', '¡Pago recibido!');
+      confirmation.setAttribute('subtitle', 'Hemos procesado tu pago exitosamente.');
+      confirmation.setAttribute('image', './assets/image1.png');
+    }, 2000);
+
+    // Leer parámetros de la URL para personalizar el componente
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('title')) confirmation.setAttribute('title', params.get('title'));
+    if (params.has('subtitle')) confirmation.setAttribute('subtitle', params.get('subtitle'));
+    if (params.has('image')) confirmation.setAttribute('image', params.get('image'));
+  </script>
+</body>
+</html>
