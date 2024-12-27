@@ -59,3 +59,19 @@ form.addEventListener('form-change', (e) => {
 form.addEventListener('form-submit', (e) => {
     console.log('form-submit', e.detail);
 });
+
+const elementref = document.querySelector('custom-links');
+elementref.setSubtitle('Nuestros enlaces');
+elementref.addParticipant({
+    title: 'Eventos',
+    links: [
+        { name: 'Eventos', href: '#Eventos' },
+    ]
+});
+elementref.addParticipant({
+    title: 'Sobre Nosotros',
+    links: [
+        { name: 'Sobre Nosotros', href: '#Sobre-nosotros' },
+        { name: 'Contacto', href: '#Contacto' },
+    ]
+});

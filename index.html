@@ -12,6 +12,7 @@
   <script type="module" src="./src/customcard.js"></script>
   <script type="module" src="./src/section-ca.js"></script>
   <script type="module" src="./src/carousel.js"></script>
+  <script type="module" src="./src/customrefs.js"></script>
   <script type="module" src="./src/main.js"></script>
   <style>
     body {
@@ -149,6 +150,7 @@
         features="Dias de evento 22 y23,lugar Centro comercial la cuadra,Artistas planificados,Actividades a realizar"  
         latitude="19.4326"
         longitude="-99.1332"
+        simplifyDate="mayo"
       ></event-card>
       <event-card
       location="quevedo ecuador"
@@ -157,6 +159,7 @@
       features="Dias de evento 22 y23,lugar Centro comercial la cuadra,Artistas planificados,Actividades a realizar"
       latitude="-1.6102"
       longitude="-79.0034"
+      simplifyDate="junio"
     ></event-card>
     <event-card
     location="Lima Peru"
@@ -165,10 +168,13 @@
     features="Dias de evento 22 y23,lugar Centro comercial la cuadra,Artistas planificados,Actividades a realizar"
     latitude="-12.0464"
     longitude="-77.0428"
+    simplifyDate="julio"
   ></event-card>
       </div>
-      <div>
-
+      <div class="grid dual-grid">
+        <div>
+          <custom-links></custom-links>
+        </div>
         <dynamic-form id="myform"></dynamic-form>
       </div>
       <div class="m-5 justify-center">
@@ -183,6 +189,7 @@
               name="nombre de artista" 
               description="descriptcion de artista"
               image="./assets/transparent-naruto-preview.png"
+              
               ></guest-card>
               <guest-card
               name="Cosplayer invitada" 

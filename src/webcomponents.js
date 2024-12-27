@@ -1707,7 +1707,7 @@ constructor() {
     styleTag.textContent += `
         /* Dark Mode Styles */
         .form-default.dark-mode {
-            background: #1f2937;
+            background: #131313;
             color: #f9fafb;
             box-shadow: 0 1px 3px 0 rgb(255 255 255 / 0.1);
         }
@@ -1719,9 +1719,9 @@ constructor() {
         .dark-mode input, 
         .dark-mode select, 
         .dark-mode textarea {
-            background-color: #2d3748;
+            background-color: #141414;
             color: #f9fafb;
-            border-color: #4a5568;
+            border-color: #444;
         }
         
         .dark-mode input[type="checkbox"] {
@@ -1731,7 +1731,7 @@ constructor() {
         
         .dark-mode input[type="checkbox"]:checked {
             background-color: #4299e1;
-            border-color: #3182ce;
+            border-color: #4299e1;
         }
         
         .dark-mode .error-message {
@@ -1739,12 +1739,12 @@ constructor() {
         }
         
         .dark-mode button[type="submit"] {
-            background-color: #4299e1;
-            color: white;
+            background-color: #d4f63b;
+            color: black;
         }
         
         .dark-mode button[type="submit"]:hover {
-            background-color: #3182ce;
+            background-color: #a4bf29;
         }
     `;
     this.formConfig.darkMode = false;

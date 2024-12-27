@@ -240,7 +240,7 @@ class StatCard extends HTMLElement {
         // Cargar Mapillary scripts y styles dinámicamente
         await this.loadMapillaryResources();
         this.render();
-        //this.initializeMapillary();
+        this.initializeMapillary();
     }
 
     attributeChangedCallback() {
@@ -349,14 +349,20 @@ class StatCard extends HTMLElement {
   render() {
     const location = this.getAttribute('location') || '';
     const date = this.getAttribute('date') || '';
+    const simplifyDate = this.getAttribute('simplifyDate') || '';
     const image = this.getAttribute('image') || null;
     const features = this.getAttribute('features')?.split(',') || [];
 
     // Renderiza el contenido inicial
     this.shadowRoot.innerHTML = `
         <style>
+            .flex {
+                display: flex;
+            }
+            .justify-center {
+                justify-content: center;
+            }
             .card {
-                background: rgb(17, 17, 17);
                 border-radius: 8px;
                 overflow: hidden;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -367,7 +373,6 @@ class StatCard extends HTMLElement {
             #mly {
                 width: 100%;
                 height: 200px;
-                display: flex;
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
@@ -389,7 +394,12 @@ class StatCard extends HTMLElement {
                 margin-bottom: 0.5rem;
                 color: rgb(255, 255, 255);
             }
-
+            .simplify-date {
+                font-size: 1.5rem;
+                font-weight: bold;
+                margin-bottom: 0.5rem;
+                color: #d4f63b;
+            }
             .date {
                 color: rgb(233, 233, 233);
                 margin-bottom: 1rem;
@@ -407,21 +417,29 @@ class StatCard extends HTMLElement {
                 color: #646cff;
                 padding: 0.25rem 0.5rem;
                 border-radius: 4px;
-                background: rgb(36, 36, 36);
                 transition: background 0.3s;
             }
 
             .feature-link:hover {
                 background: rgb(49, 49, 49);
             }
+            .more-details {
+                background: #d4f63b;
+                color: black;
+                border: none;
+                font-size: 1.2rem;
+                cursor: pointer;
+                border-radius: 2rem;
+                padding-inline: 4rem;
+                padding-block: 0.5rem;
+                margin-top: 2rem;
+            }
         </style>
 
         <div class="card">
-            <div id="mly" title="Haz clic para ver la vista previa">
-                ${image ? `<img src="${image}" alt="Vista previa del evento">` : 'Cargando vista previa...'}
-            </div>
-            <div class="card-content">
-                <div class="location">${location}</div>
+        <div class="card-content">
+        <div class="location">${location}</div>
+              <div class="simplify-date">${simplifyDate}</div>
                 <div class="date">${date}</div>
                 <div class="features">
                     ${features.map(feature => `
@@ -431,10 +449,24 @@ class StatCard extends HTMLElement {
                     `).join('')}
                 </div>
             </div>
+                        <div id="mly" title="${location}">
+            </div>
+            <div class="flex justify-center">
+                        <button id="more-details" class="more-details">Detalles</button>
+                     </div>  
         </div>
     `;
+    //                ${image ? `<img src="${image}" alt="Vista previa del evento">` : 'Cargando vista previa...'}
 
     this.addClickListener(image);
+    this.shadowRoot.getElementById('more-details').addEventListener('click', () => {
+      const customevent = new CustomEvent('more-details-click', {
+        detail: this,
+        bubbles: true,
+        composed: true
+      });
+      this.dispatchEvent(customevent);
+    });
 }
 
 addClickListener(image) {
@@ -442,7 +474,6 @@ addClickListener(image) {
 
     if (image) {
         mlyDiv.addEventListener('click', async () => {
-            mlyDiv.innerHTML = 'Cargando vista previa...'; // Muestra un mensaje mientras se carga
             await this.initializeMapillary();
         });
     } else {
@@ -480,7 +511,6 @@ class GuestCard extends HTMLElement {
         this.shadowRoot.innerHTML = `
             <style>
                 .card {
-                    background: rgb(17, 17, 17);
                     border-radius: 8px;
                     overflow: hidden;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.1);

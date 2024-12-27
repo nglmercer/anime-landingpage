@@ -49,7 +49,6 @@ class StandInfo extends HTMLElement {
             color: white;
             background-color: #000;
             width: 100%;
-            height: 100%;
           }
   
           .container {
