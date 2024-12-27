@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite App</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            height: 100dvh;
+            background-color: #000;
+            color: #fff;
+        }
+    </style>
+  </head>
+  <body>
+    <script type="module" src="./src/standinfo.js"></script>
+        <div id="app" style="height: 100%;"></div>
+    <script>
+        const app = document.getElementById('app');
+        const standinfo = document.createElement('stand-info');
+        standinfo.setAttribute('title', 'Stand N2');
+        standinfo.setAttribute('price', '$82+IVA');
+        standinfo.setAttribute('sections', JSON.stringify([
+            {
+                title: 'Espacio',
+                content: 'EL espacio que usted esta apunto de adquirir es de 3x3 donde podra colocar sus productos a dispoccion'
+            },
+            {
+                title: 'Que incluye el costo',
+                content: 'el costo le incluye una carpa de 3x3 una mesa rectangular y dos sillas plasticas y credenciales para 2 personas para acceso y salida del evento'
+            },
+            {
+                title: 'informacion general',
+                content: 'No se da bodegaje a ningun tipo de carga si el personal disponible dentro del evento o existe una posibilidad de guardad sus productos se le ayudara y se le cobra un costo extra para pagar un guardia que cuide sus productos'
+            },
+            {
+                title: 'seleccione metodo de pago',
+                content: 'el costo le incluye una carpa de 3x3 una mesa rectangular y dos sillas plasticas y credenciales para 2 personas para acceso y salida del evento'
+            }
+        ]));
+        app.appendChild(standinfo);
+    </script>
+  </body>
+</html>

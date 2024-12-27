@@ -13,7 +13,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      height: 100dvh;
     }
   </style>
 </head>
@@ -41,6 +41,13 @@
         // Agregar estilos
         const style = document.createElement('style');
         style.textContent = `
+          :host {
+            height: 100%;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
           .container {
             display: flex;
             flex-direction: column;
@@ -48,10 +55,7 @@
             align-items: center;
             text-align: center;
             background-color: #1e1e1e;
-            padding: 20px;
             border-radius: 10px;
-            width: 90%;
-            max-width: 400px;
           }
           img {
             width: 100px;
